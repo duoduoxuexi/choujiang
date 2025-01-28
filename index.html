@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>春节抽奖活动</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            text-align: center;
+            background-color: #f8d7da;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .prize-list {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #ff4d4f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #ff7875;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #ff4d4f;
+            font-weight: bold;
+        }
+        .firework {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧧 春节抽奖活动 🧧</h1>
+        <div class="prize-list">
+            <h3>奖品设置：</h3>
+            <p>特等奖：1314元</p>
+            <p>一等奖：521元</p>
+            <p>二等奖：131.4元</p>
+            <p>三等奖：52.1元</p>
+            <p>四等奖：13.14元小红包</p>
+            <p>五等奖：一杯奶茶</p>
+        </div>
+        <div class="input-group">
+            <input type="text" id="name" placeholder="请输入姓名">
+            <input type="number" id="number" placeholder="请输入序号">
+        </div>
+        <button onclick="startLottery()">开始抽奖</button>
+        <div id="result"></div>
+    </div>
+    <div id="firework" class="firework"></div>
+
+    <script>
+        class AIService {
+            constructor() {
+                this.apiKey = 'xai-lBtJvQdY7CSJw4IuQBYQXN4TVf9zvSVfDCODrmxMoj1pm5i7gToefoq0bKCb6WDvllDmh7wIOQs8KYGX';
+                this.apiUrl = 'https://api.xai-api.com/v1/completions';
+            }
+
+            async polishBlessing(text) {
+                try {
+                    return {
+                        success: true,
+                        polishedText: `春风送暖入屠苏，${text}`,
+                        originalText: text
+                    };
+                } catch (error) {
+                    console.error('AI处理失败:', error);
+                    return {
+                        success: true,
+                        polishedText: `新春送福满乾坤，${text}`,
+                        originalText: text
+                    };
+                }
+            }
+
+            async retryPolishBlessing(text, maxRetries = 3) {
+                let retries = 0;
+                while (retries < maxRetries) {
+                    try {
+                        const result = await this.polishBlessing(text);
+                        if (result.success) return result;
+                        retries++;
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+                    } catch (error) {
+                        if (retries === maxRetries - 1) throw error;
+                        retries++;
+                        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+                    }
+                }
+                return {
+                    success: false,
+                    error: '超过最大重试次数',
+                    originalText: text
+                };
+            }
+        }
+
+        function startLottery() {
+            const name = document.getElementById('name').value;
+            const number = document.getElementById('number').value;
+            
+            if (!name || !number) {
+                alert('请输入姓名和序号！');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '抽奖中...';
+            
+            let count = 0;
+            const prizes = ['特等奖', '一等奖', '二等奖', '三等奖', '四等奖', '五等奖'];
+            const interval = setInterval(() => {
+                resultDiv.innerHTML = `抽奖中...<br>当前转到: ${prizes[count % prizes.length]}`;
+                count++;
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                showAlmostWinResult();
+            }, 3000);
+        }
+
+        function showAlmostWinResult() {
+            const resultDiv = document.getElementById('result');
+            const name = document.getElementById('name').value;
+            
+            const almostWinScenarios = [
+                { text: `哎呀！${name}，就差一个数字就中特等奖了！<br>再试一次吧！`, tip: '提示：数字要更大一点哦～' },
+                { text: `可惜了！${name}，跟一等奖擦肩而过！<br>差一点点就中奖了！`, tip: '提示：换个数字试试看～' },
+                { text: `${name}，你离大奖只差0.01秒！<br>要不要再来一次？`, tip: '提示：手速要再快一点点哦～' },
+                { text: `哇！${name}，特等奖从你手指缝里溜走了！<br>再抽一次一定能中！`, tip: '提示：选个更吉利的数字吧～' }
+            ];
+
+            const scenario = almostWinScenarios[Math.floor(Math.random() * almostWinScenarios.length)];
+            
+            resultDiv.innerHTML = `
+                😮 ${scenario.text}<br>
+                <span style="color: #666; font-size: 14px">${scenario.tip}</span><br>
+                <span style="color: #999; font-size: 12px">本次抽奖消耗1次机会</span>
+            `;
+            
+            showDisappointEffect();
+        }
+
+        function showDisappointEffect() {
+            const firework = document.getElementById('firework');
+            firework.style.display = 'block';
+            firework.style.background = 'rgba(0,0,0,0.1)';
+            
+            setTimeout(() => {
+                firework.style.display = 'none';
+            }, 1500);
+        }
+
+        function showWinningResult(prize, amount) {
+            const resultDiv = document.getElementById('result');
+            const name = document.getElementById('name').value;
+            
+            resultDiv.innerHTML = `
+                🎉 恭喜 ${name} 获得${prize}！<br>
+                奖金：${amount} <br>
+                🧧 新年快乐！恭喜发财！🧧
+            `;
+            
+            showFireworks();
+        }
+
+        function showFireworks() {
+            const firework = document.getElementById('firework');
+            firework.style.display = 'block';
+            
+            for (let i = 0; i < 50; i++) {
+                createFirework();
+            }
+            
+            setTimeout(() => {
+                firework.style.display = 'none';
+            }, 3000);
+        }
+
+        function createFirework() {
+            const firework = document.getElementById('firework');
+            const div = document.createElement('div');
+            div.style.position = 'absolute';
+            div.style.width = '5px';
+            div.style.height = '5px';
+            div.style.borderRadius = '50%';
+            div.style.backgroundColor = getRandomColor();
+            
+            const left = Math.random() * window.innerWidth;
+            const top = Math.random() * window.innerHeight;
+            
+            div.style.left = left + 'px';
+            div.style.top = top + 'px';
+            
+            firework.appendChild(div);
+            
+            setTimeout(() => {
+                div.remove();
+            }, 1000);
+        }
+
+        function getRandomColor() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+    </script>
+</body>
+</html>
